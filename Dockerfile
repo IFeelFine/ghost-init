@@ -24,7 +24,7 @@
 # - machine capable of multi-architecture build
 
 # Start from a small nodejs image
-FROM node:18-alpine
+FROM node:18-slim
 
 # Build Arguments and Image Labels
 ARG INIT_SCRIPT_URL=https://r2.ifeelfine.ca/ghost-init
@@ -38,5 +38,8 @@ LABEL org.opencontainers.image.vendor="I Feel Fine"
 LABEL org.opencontainers.image.version="v0.0.2"
 
 ADD ${INIT_SCRIPT_URL} /ghost-init
+
+RUN apk add --no-cache bash \
+    && chmod +x /ghost-init
 
 ENTRYPOINT [ "/ghost-init" ]
