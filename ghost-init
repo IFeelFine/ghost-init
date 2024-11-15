@@ -17,6 +17,9 @@
 # Description: 
 # Initializes the ghost directories and installs the s3
 # storage plugin, if needed.
+# Because permissions are being set via the dockerfile, we
+# remove the need to set them here. This will be removed in a
+# future release.
 
 set -e
 echo_cmd="/bin/echo -e"
@@ -29,11 +32,11 @@ $echo_cmd "1. Checking if \"${GHOST_CONTENT}\" exists...\n"
 if [[ ! -d ${GHOST_CONTENT} ]]; then
   if mkdir -p "${GHOST_CONTENT}"; then
     $echo_cmd "[ OK    ] Created \"${GHOST_CONTENT}\""
-    if chown "${USR_GRP}" "${GHOST_CONTENT}"; then
-      $echo_cmd "[ OK    ] Set ownership of \"${GHOST_CONTENT}\" to ${USR_GRP}"
-    else
-      $echo_cmd "[ ERROR ] Failed to set ownership of \"${GHOST_CONTENT}\" to ${USR_GRP}. Exiting with 1..." && exit 1
-    fi
+#    if chown "${USR_GRP}" "${GHOST_CONTENT}"; then
+#      $echo_cmd "[ OK    ] Set ownership of \"${GHOST_CONTENT}\" to ${USR_GRP}"
+#    else
+#      $echo_cmd "[ ERROR ] Failed to set ownership of \"${GHOST_CONTENT}\" to ${USR_GRP}. Exiting with 1..." && exit 1
+#    fi
   else
     $echo_cmd "[ ERROR ] Failed to create \"${GHOST_CONTENT}\". Exiting with 1..." && exit 1
   fi
@@ -48,12 +51,12 @@ for DIR in $SUB_DIRS; do
   if [[ ! -d ${GHOST_CONTENT}/${DIR} ]]; then 
     if mkdir -p "${GHOST_CONTENT}/${DIR}"; then
       $echo_cmd "[ OK    ] Created \"${GHOST_CONTENT}/${DIR}\""
-      if chown "${USR_GRP}" "${GHOST_CONTENT}/${DIR}"; then
-        $echo_cmd "[ OK    ] Set ownership of \"${GHOST_CONTENT}/${DIR}\" to ${USR_GRP}"
-      else
-        $echo_cmd "[ ERROR ] Failed to set ownership of \"${GHOST_CONTENT}/${DIR}\" to ${USR_GRP}. Exiting with 1..." && exit 1
-      fi
-    else $echo_cmd "[ ERROR ] Failed to create \"${GHOST_CONTENT}/${DIR}\". Exiting with 1..." && exit 1
+#      if chown "${USR_GRP}" "${GHOST_CONTENT}/${DIR}"; then
+#        $echo_cmd "[ OK    ] Set ownership of \"${GHOST_CONTENT}/${DIR}\" to ${USR_GRP}"
+#      else
+#        $echo_cmd "[ ERROR ] Failed to set ownership of \"${GHOST_CONTENT}/${DIR}\" to ${USR_GRP}. Exiting with 1..." && $echo_cmd "\n[ ERROR ] Init script completed at $(date)." && exit 1
+#      fi
+    else $echo_cmd "[ ERROR ] Failed to create \"${GHOST_CONTENT}/${DIR}\". Exiting with 1..." && $echo_cmd "\n[ ERROR ] Init script completed at $(date)." && exit 1
     fi
   else $echo_cmd "[ OK    ] \"${GHOST_CONTENT}/${DIR}\" already exists."
   fi
@@ -70,10 +73,10 @@ if [[ "${STORAGE__PROVIDER}" == "s3" ]]; then
     if mkdir -p "${GHOST_CONTENT}/adapters/storage" && mv node_modules/ghos3 "${GHOST_CONTENT}/adapters/storage/s3"; then
       $echo_cmd "[ OK    ] Moved ghos3 plug-in to \"${GHOST_CONTENT}/adapters/storage/s3\""
     else
-      $echo_cmd "[ ERROR ] Failed to copy ghos3 plug-in to \"${GHOST_CONTENT}/adapters/storage/s3\". Exiting with 1..." && exit 1
+      $echo_cmd "[ ERROR ] Failed to copy ghos3 plug-in to \"${GHOST_CONTENT}/adapters/storage/s3\". Exiting with 1..." && $echo_cmd "\n[ ERROR ] Init script completed at $(date)." && exit 1
     fi
   else
-    $echo_cmd "[ ERROR ] Failed to install ghos3 plug-in. Exiting with 1..." && exit 1
+    $echo_cmd "[ ERROR ] Failed to install ghos3 plug-in. Exiting with 1..." && $echo_cmd "\n[ ERROR ] Init script completed at $(date)." && exit 1
   fi
 else
   $echo_cmd "[ OK    ] Using regular storage"
