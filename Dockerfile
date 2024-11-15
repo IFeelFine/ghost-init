@@ -34,10 +34,10 @@ ARG NODE_USER=1000:1000
 LABEL org.opencontainers.image.created="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
 LABEL org.opencontainers.image.description="A Node.js that instantiates the Ghost environment"
 LABEL org.opencontainers.image.licenses="GPL2"
-LABEL org.opencontainers.image.source="https://github.com/ifeelfine/ghost-init"
+LABEL org.opencontainers.image.source="https://github.com/IFeelFine/ghost-init"
 LABEL org.opencontainers.image.title="Internal Ghost Environment Initialization"
 LABEL org.opencontainers.image.vendor="I Feel Fine"
-LABEL org.opencontainers.image.version="v0.1.0"
+LABEL org.opencontainers.image.version="v0.1.1"
 
 ADD ${INIT_SCRIPT_URL} /ghost-init
 
