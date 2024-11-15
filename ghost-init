@@ -1,0 +1,81 @@
+#!/bin/bash
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++#
+#                                                           #
+#  888888 8888888              88 8888888                   #
+#    88   88                   88 88    oo                  #
+#    88   88                   88 88                        #
+#    88   88888 .d8b.   .d8b.  88 88888 88 8888b.  .d8b.    #
+#    88   88   d8P Y8b d8P Y8b 88 88    88 88  8b d8P Y8b   #
+#    88   88   8888888 8888888 88 88    88 88  88 8888888   #
+#    88   88   Y8b.    Y8b.    88 88    88 88  88 Y8b.      #
+#  888888 88    ºY888P  ºY888P 88 88    88 88  88  ºY888P   #
+#                           (c) 2015-2024 I Feel Fine, Inc. #
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++#
+# ghost-init
+# Github Repo: <ifeelfine/ghost-init>
+# -------------
+# Description: 
+# Initializes the ghost directories and installs the s3
+# storage plugin, if needed.
+
+set -e
+echo_cmd="/bin/echo -e"
+GHOST_CONTENT=${GHOST_CONTENT:-/var/lib/ghost/content}
+USR_GRP=${USR_GRP:-"1000:1000"}
+
+$echo_cmd "Ghost init script started at $(date)...\n\n\n"
+# Check if the main content directory exists and create it if not
+$echo_cmd "1. Checking if \"${GHOST_CONTENT}\" exists...\n"
+if [[ ! -d ${GHOST_CONTENT} ]]; then
+  if mkdir -p "${GHOST_CONTENT}"; then
+    $echo_cmd "[ OK    ] Created \"${GHOST_CONTENT}\""
+    if chown "${USR_GRP}" "${GHOST_CONTENT}"; then
+      $echo_cmd "[ OK    ] Set ownership of \"${GHOST_CONTENT}\" to ${USR_GRP}"
+    else
+      $echo_cmd "[ ERROR ] Failed to set ownership of \"${GHOST_CONTENT}\" to ${USR_GRP}. Exiting with 1..." && exit 1
+    fi
+  else
+    $echo_cmd "[ ERROR ] Failed to create \"${GHOST_CONTENT}\". Exiting with 1..." && exit 1
+  fi
+else
+  $echo_cmd "[ OK    ] \"${GHOST_CONTENT}\" already exists...skipping."
+fi
+
+# Ensure the sub directories of ${GHOST_CONTENT} exist.
+$echo_cmd "2. Checking that subdirectories of \"${GHOST_CONTENT}\" exist...\n"
+SUB_DIRS="apps data files images logs media public settings themes"
+for DIR in $SUB_DIRS; do
+  if [[ ! -d ${GHOST_CONTENT}/${DIR} ]]; then 
+    if mkdir -p "${GHOST_CONTENT}/${DIR}"; then
+      $echo_cmd "[ OK    ] Created \"${GHOST_CONTENT}/${DIR}\""
+      if chown "${USR_GRP}" "${GHOST_CONTENT}/${DIR}"; then
+        $echo_cmd "[ OK    ] Set ownership of \"${GHOST_CONTENT}/${DIR}\" to ${USR_GRP}"
+      else
+        $echo_cmd "[ ERROR ] Failed to set ownership of \"${GHOST_CONTENT}/${DIR}\" to ${USR_GRP}. Exiting with 1..." && exit 1
+      fi
+    else $echo_cmd "[ ERROR ] Failed to create \"${GHOST_CONTENT}/${DIR}\". Exiting with 1..." && exit 1
+    fi
+  else $echo_cmd "[ OK    ] \"${GHOST_CONTENT}/${DIR}\" already exists."
+  fi
+done
+
+# Install S3 storage adapter if required
+$echo_cmd "3. Checking if we're using S3 for storage and then install the plugin if required.\n"
+if [[ "${STORAGE__PROVIDER}" == "s3" ]]; then
+  $echo_cmd "[ OK    ] Using S3 for storage"
+  $echo_cmd "3.1 Installing the ghos3 plug-in\n"
+  if npm install ghos3; then
+    $echo_cmd "[ OK    ] Installed ghos3 plug-in"
+    if mkdir -p "${GHOST_CONTENT}/adapters/storage" && mv node_modules/ghos3 "${GHOST_CONTENT}/adapters/storage/s3"; then
+      $echo_cmd "[ OK    ] Moved ghos3 plug-in to \"${GHOST_CONTENT}/adapters/storage/s3\""
+    else
+      $echo_cmd "[ ERROR ] Failed to copy ghos3 plug-in to \"${GHOST_CONTENT}/adapters/storage/s3\". Exiting with 1..." && exit 1
+    fi
+  else
+    $echo_cmd "[ ERROR ] Failed to install ghos3 plug-in. Exiting with 1..." && exit 1
+  fi
+else
+  $echo_cmd "[ OK    ] Using regular storage"
+fi
+$echo_cmd "\n[ OK    ] Init script completed at $(date)."
+exit 0
