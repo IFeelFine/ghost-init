@@ -28,6 +28,8 @@ FROM node:18-slim
 
 # Build Arguments and Image Labels
 ARG INIT_SCRIPT_URL=https://r2.ifeelfine.ca/ghost-init
+ARG GHOST_DIR=/var/lib/ghost/content
+ARG NODE_USER=1000:1000
 
 LABEL org.opencontainers.image.created="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
 LABEL org.opencontainers.image.description="A Node.js that instantiates the Ghost environment"
@@ -35,11 +37,13 @@ LABEL org.opencontainers.image.licenses="GPL2"
 LABEL org.opencontainers.image.source="https://github.com/ifeelfine/ghost-init"
 LABEL org.opencontainers.image.title="Internal Ghost Environment Initialization"
 LABEL org.opencontainers.image.vendor="I Feel Fine"
-LABEL org.opencontainers.image.version="v0.0.4"
+LABEL org.opencontainers.image.version="v0.0.5"
 
 ADD ${INIT_SCRIPT_URL} /ghost-init
 
-RUN chmod +x /ghost-init
+RUN    chmod +x /ghost-init \
+    && mkdir -p ${GHOST_DIR} \
+    && chown ${NODE_USER} ${GHOST_DIR}
 
 WORKDIR /opt/node
 
