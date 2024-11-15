@@ -64,6 +64,7 @@ $echo_cmd "3. Checking if we're using S3 for storage and then install the plugin
 if [[ "${STORAGE__PROVIDER}" == "s3" ]]; then
   $echo_cmd "[ OK    ] Using S3 for storage"
   $echo_cmd "3.1 Installing the ghos3 plug-in\n"
+  cd /opt/node
   if npm install ghos3; then
     $echo_cmd "[ OK    ] Installed ghos3 plug-in"
     if mkdir -p "${GHOST_CONTENT}/adapters/storage" && mv node_modules/ghos3 "${GHOST_CONTENT}/adapters/storage/s3"; then

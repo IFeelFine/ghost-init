@@ -35,11 +35,12 @@ LABEL org.opencontainers.image.licenses="GPL2"
 LABEL org.opencontainers.image.source="https://github.com/ifeelfine/ghost-init"
 LABEL org.opencontainers.image.title="Internal Ghost Environment Initialization"
 LABEL org.opencontainers.image.vendor="I Feel Fine"
-LABEL org.opencontainers.image.version="v0.0.3"
+LABEL org.opencontainers.image.version="v0.0.4"
 
 ADD ${INIT_SCRIPT_URL} /ghost-init
 
-RUN apk add --no-cache bash \
-    && chmod +x /ghost-init
+RUN chmod +x /ghost-init
+
+WORKDIR /opt/node
 
 ENTRYPOINT [ "/ghost-init" ]
