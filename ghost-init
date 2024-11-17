@@ -17,6 +17,7 @@
 # Description: 
 # Initializes the ghost directories and installs the s3
 # storage plugin, if needed.
+# DEPRECATION WARNING:
 # Because permissions are being set via the dockerfile, we
 # remove the need to set them here. This will be removed in a
 # future release.
@@ -32,11 +33,13 @@ $echo_cmd "1. Checking if \"${GHOST_CONTENT}\" exists...\n"
 if [[ ! -d ${GHOST_CONTENT} ]]; then
   if mkdir -p "${GHOST_CONTENT}"; then
     $echo_cmd "[ OK    ] Created \"${GHOST_CONTENT}\""
+# -- Begin Deprecation --
 #    if chown "${USR_GRP}" "${GHOST_CONTENT}"; then
 #      $echo_cmd "[ OK    ] Set ownership of \"${GHOST_CONTENT}\" to ${USR_GRP}"
 #    else
 #      $echo_cmd "[ ERROR ] Failed to set ownership of \"${GHOST_CONTENT}\" to ${USR_GRP}. Exiting with 1..." && exit 1
 #    fi
+# -- End Deprecation --
   else
     $echo_cmd "[ ERROR ] Failed to create \"${GHOST_CONTENT}\". Exiting with 1..." && exit 1
   fi
@@ -51,11 +54,13 @@ for DIR in $SUB_DIRS; do
   if [[ ! -d ${GHOST_CONTENT}/${DIR} ]]; then 
     if mkdir -p "${GHOST_CONTENT}/${DIR}"; then
       $echo_cmd "[ OK    ] Created \"${GHOST_CONTENT}/${DIR}\""
+# -- Begin Deprecation --
 #      if chown "${USR_GRP}" "${GHOST_CONTENT}/${DIR}"; then
 #        $echo_cmd "[ OK    ] Set ownership of \"${GHOST_CONTENT}/${DIR}\" to ${USR_GRP}"
 #      else
 #        $echo_cmd "[ ERROR ] Failed to set ownership of \"${GHOST_CONTENT}/${DIR}\" to ${USR_GRP}. Exiting with 1..." && $echo_cmd "\n[ ERROR ] Init script completed at $(date)." && exit 1
 #      fi
+# -- End Deprecation --
     else $echo_cmd "[ ERROR ] Failed to create \"${GHOST_CONTENT}/${DIR}\". Exiting with 1..." && $echo_cmd "\n[ ERROR ] Init script completed at $(date)." && exit 1
     fi
   else $echo_cmd "[ OK    ] \"${GHOST_CONTENT}/${DIR}\" already exists."

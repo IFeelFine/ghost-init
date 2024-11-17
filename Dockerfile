@@ -37,7 +37,7 @@ LABEL org.opencontainers.image.licenses="GPL2"
 LABEL org.opencontainers.image.source="https://github.com/IFeelFine/ghost-init"
 LABEL org.opencontainers.image.title="Internal Ghost Environment Initialization"
 LABEL org.opencontainers.image.vendor="I Feel Fine"
-LABEL org.opencontainers.image.version="v0.1.1"
+LABEL org.opencontainers.image.version="v0.2.0"
 
 ADD ${INIT_SCRIPT_URL} /ghost-init
 
