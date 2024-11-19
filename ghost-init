@@ -16,16 +16,18 @@
 # -------------
 # Description: 
 # Initializes the ghost directories and installs the s3
-# storage plugin, if needed.
+# storage plugin, if needed. Updates configMap variables to
+# values from the 1Password secret.
 # DEPRECATION WARNING:
 # Because permissions are being set via the dockerfile, we
 # remove the need to set them here. This will be removed in a
 # future release.
 
 set -e
-echo_cmd="/bin/echo -e"
+echo_cmd="/bin/echo -e $(date +%Y-%m-%dT%H:%M:%S-%Z) "
 GHOST_CONTENT=${GHOST_CONTENT:-/var/lib/ghost/content}
 USR_GRP=${USR_GRP:-"1000:1000"}
+CONFIG_FILE="/var/lib/ghost/config.production.json"
 
 $echo_cmd "Ghost init script started at $(date)...\n\n\n"
 # Check if the main content directory exists and create it if not
@@ -86,5 +88,23 @@ if [[ "${STORAGE__PROVIDER}" == "s3" ]]; then
 else
   $echo_cmd "[ OK    ] Using regular storage"
 fi
+
+# Perform ConfigMap variable substitution
+$echo_cmd "4. Processing ConfigMap environment variables...\n"
+
+if [[ -f "$CONFIG_FILE" ]]; then
+    $echo_cmd "[ OK    ] Found config file at ${CONFIG_FILE}"
+    
+    # Replace environment variables in the config file
+    # This will replace any ${VARIABLE} or $VARIABLE with its value
+    if envsubst < "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"; then
+      $echo_cmd "[ OK    ] Substituted environment variables in config file"
+    else
+      $echo_cmd "[ ERROR ] Failed to substitute environment variables in config file. Exiting with 1..." && $echo_cmd "\n[ ERROR ] Init script completed at $(date)." && exit 1
+    fi
+else
+    $echo_cmd "[ WARN  ] Config file not found at ${CONFIG_FILE}"
+fi
+
 $echo_cmd "\n[ OK    ] Init script completed at $(date)."
 exit 0
