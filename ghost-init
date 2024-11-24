@@ -18,93 +18,157 @@
 # Initializes the ghost directories and installs the s3
 # storage plugin, if needed. Updates configMap variables to
 # values from the 1Password secret.
-# DEPRECATION WARNING:
-# Because permissions are being set via the dockerfile, we
-# remove the need to set them here. This will be removed in a
-# future release.
+# -------------
+# Version 0.3.0 (see GH repo for release notes)
 
-set -e
-echo_cmd="/bin/echo -e $(date +%Y-%m-%dT%H:%M:%S-%Z) "
-GHOST_CONTENT=${GHOST_CONTENT:-/var/lib/ghost/content}
-USR_GRP=${USR_GRP:-"1000:1000"}
-CONFIG_FILE="/var/lib/ghost/config.production.json"
+set -e # Exit on error
 
-$echo_cmd "Ghost init script started at $(date)...\n\n\n"
-# Check if the main content directory exists and create it if not
-$echo_cmd "1. Checking if \"${GHOST_CONTENT}\" exists...\n"
-if [[ ! -d ${GHOST_CONTENT} ]]; then
-  if mkdir -p "${GHOST_CONTENT}"; then
-    $echo_cmd "[ OK    ] Created \"${GHOST_CONTENT}\""
-# -- Begin Deprecation --
-#    if chown "${USR_GRP}" "${GHOST_CONTENT}"; then
-#      $echo_cmd "[ OK    ] Set ownership of \"${GHOST_CONTENT}\" to ${USR_GRP}"
-#    else
-#      $echo_cmd "[ ERROR ] Failed to set ownership of \"${GHOST_CONTENT}\" to ${USR_GRP}. Exiting with 1..." && exit 1
-#    fi
-# -- End Deprecation --
-  else
-    $echo_cmd "[ ERROR ] Failed to create \"${GHOST_CONTENT}\". Exiting with 1..." && exit 1
-  fi
+# Variable Declaration
+# ====================
+DEBUG=${DEBUG:-false}                                   # Assume debug is off unless specifically set
+GHOST_CONTENT=${GHOST_CONTENT:-/var/lib/ghost/content}  # Set Ghost content directory
+CONFIG_FILE="/var/lib/ghost/config.production.json"     # Name of Ghost config file
+SUB_DIRS="apps data files images logs media public settings themes" # Directories within $GHOST_CONTENT
+SUB_CREATED=false                                       # Indicates a subdirectory was created
+STORAGE__PROVIDER=${STORAGE__PROVIDER:-}                # Storage provider
+
+# Print Functions
+# ===============
+_echo() {
+  /bin/echo -e "$(date +%Y-%m-%dT%H:%M:%S-%Z) "
+}
+_ok() {
+  _echo "[ \033[0;32mOK\033[0m    ] $*"
+}
+_warn() {
+  _echo "[ \033[1;33mWARN\033[0m  ] $*"
+}
+_error() {
+  _echo "[ \033[0;31mERROR\033[0m ] $*"
+}
+_debug() {
+  $DEBUG && _echo "[ DEBUG ] $*"
+}
+
+# Preamble
+# ========
+# Check to make sure that the required tools have been installed with the Dockerfile
+
+if command -v envsubst >/dev/null 2>&1; then
+  :
 else
-  $echo_cmd "[ OK    ] \"${GHOST_CONTENT}\" already exists...skipping."
+  _error "envsubst is required but not installed."
+  _echo
+  _error "Init script failed to complete." && exit 1;
+fi
+if [[ "${GHOST_CONTENT}" != /* ]]; then
+  _error "GHOST_CONTENT must be an absolute path, but you provided \"${GHOST_CONTENT}\"."
+  _echo
+  _error "Init script failed to complete." && exit 1;
 fi
 
-# Ensure the sub directories of ${GHOST_CONTENT} exist.
-$echo_cmd "2. Checking that subdirectories of \"${GHOST_CONTENT}\" exist...\n"
-SUB_DIRS="apps data files images logs media public settings themes"
+
+# Main Content
+# ============
+_ok "Ghost init script started..."
+_echo
+_debug "\$GHOST_CONTENT=$GHOST_CONTENT"
+_debug "\$USR_GRP=$USR_GRP"
+_debug "\$CONFIG_FILE=$CONFIG_FILE"
+
+# Step 1. Check if the content directory exists and if not create it
+_echo "1. Checking if \"${GHOST_CONTENT}\" exists."
+
+if [[ ! -d "${GHOST_CONTENT}" ]]; then
+  _debug "${GHOST_CONTENT} doesn't exist. Creating it."
+  if mkdir -p "${GHOST_CONTENT}"; then
+    _ok "\"${GHOST_CONTENT}\" directory created."
+  else
+    _error "Failed to create \"${GHOST_CONTENT}\". Exiting..."
+    _error
+    _error "Init script failed to complete." && exit 1
+  fi
+else
+  _ok "\"${GHOST_CONTENT}\" already exists."
+fi
+_echo
+
+# Step 2. Ensure the sub directories of ${GHOST_CONTENT} exist.
+_echo "2. Checking for subdirectories of \"${GHOST_CONTENT}\"."
+
+_debug "Attempting to create subdirectories \"${SUB_DIRS// /, }\"..."
 for DIR in $SUB_DIRS; do
-  if [[ ! -d ${GHOST_CONTENT}/${DIR} ]]; then 
+  _debug "Checking if \"${GHOST_CONTENT}/${DIR}\" exists."
+  if [[ ! -d "${GHOST_CONTENT}/${DIR}" ]]; then 
     if mkdir -p "${GHOST_CONTENT}/${DIR}"; then
-      $echo_cmd "[ OK    ] Created \"${GHOST_CONTENT}/${DIR}\""
-# -- Begin Deprecation --
-#      if chown "${USR_GRP}" "${GHOST_CONTENT}/${DIR}"; then
-#        $echo_cmd "[ OK    ] Set ownership of \"${GHOST_CONTENT}/${DIR}\" to ${USR_GRP}"
-#      else
-#        $echo_cmd "[ ERROR ] Failed to set ownership of \"${GHOST_CONTENT}/${DIR}\" to ${USR_GRP}. Exiting with 1..." && $echo_cmd "\n[ ERROR ] Init script completed at $(date)." && exit 1
-#      fi
-# -- End Deprecation --
-    else $echo_cmd "[ ERROR ] Failed to create \"${GHOST_CONTENT}/${DIR}\". Exiting with 1..." && $echo_cmd "\n[ ERROR ] Init script completed at $(date)." && exit 1
+      _debug "\"${GHOST_CONTENT}/${DIR}\ created"
+      SUB_CREATED=true
+    else 
+    _error "Failed to create \"${GHOST_CONTENT}/${DIR}\". Exiting..."
+    _error
+    _error "Init script failed to complete." && exit 1
     fi
-  else $echo_cmd "[ OK    ] \"${GHOST_CONTENT}/${DIR}\" already exists."
+  else _debug "\"${GHOST_CONTENT}/${DIR}\" already exists."
   fi
 done
 
-# Install S3 storage adapter if required
-$echo_cmd "3. Checking if we're using S3 for storage and then install the plugin if required.\n"
+if $SUB_CREATED; then
+  _ok "Finished creating subdirectories of \"${GHOST_CONTENT}\""
+else
+  _ok "All subdirectories of \"${GHOST_CONTENT}\" already exist."
+fi
+_echo
+
+# Step 3. Install storage adapter, if required
+_echo "3. Checking for a storage adapter and installing the plugin, if required."
+_debug "STORAGE__PROVIDER = ${STORAGE__PROVIDER}"
 if [[ "${STORAGE__PROVIDER}" == "s3" ]]; then
-  $echo_cmd "[ OK    ] Using S3 for storage"
-  $echo_cmd "3.1 Installing the ghos3 plug-in\n"
+  _ok "Using S3 for storage"
+  _echo "3.1 Installing the ghos3 plug-in"
+  _debug "Set working directory to /opt/node"
   cd /opt/node
+  _debug "Running npm install ghos3."
   if npm install ghos3; then
-    $echo_cmd "[ OK    ] Installed ghos3 plug-in"
+    _ok "Installed ghos3 plug-in"
     if mkdir -p "${GHOST_CONTENT}/adapters/storage" && mv node_modules/ghos3 "${GHOST_CONTENT}/adapters/storage/s3"; then
-      $echo_cmd "[ OK    ] Moved ghos3 plug-in to \"${GHOST_CONTENT}/adapters/storage/s3\""
+      _debug "Moved ghos3 plug-in to \"${GHOST_CONTENT}/adapters/storage/s3\""
     else
-      $echo_cmd "[ ERROR ] Failed to copy ghos3 plug-in to \"${GHOST_CONTENT}/adapters/storage/s3\". Exiting with 1..." && $echo_cmd "\n[ ERROR ] Init script completed at $(date)." && exit 1
+      _error "Failed to copy ghos3 plug-in to \"${GHOST_CONTENT}/adapters/storage/s3\". Exiting..."
+      _echo
+      _error "Init script failed to complete." && exit 1
     fi
   else
-    $echo_cmd "[ ERROR ] Failed to install ghos3 plug-in. Exiting with 1..." && $echo_cmd "\n[ ERROR ] Init script completed at $(date)." && exit 1
+    _error "Failed to install ghos3 plug-in. Exiting..." 
+    _echo
+    _error "Init script failed to complete." && exit 1
+  fi
+elif [[ "${STORAGE__PROVIDER}" != "s3" ]]; then
+  _ok "Using local storage"
+  _debug "No action required."
+elif [[ "${STORAGE__PROVIDER}" == "" ]]; then
+  _warn "Storage driver not specified. Is this correct?"
+fi
+
+# Step 4. Perform ConfigMap variable substitution
+_echo "4. Processing ConfigMap against environment variables."
+
+_debug "Looking for config file at ${CONFIG_FILE}"
+if [[ -f "$CONFIG_FILE" ]]; then
+  _debug "Found config file at ${CONFIG_FILE}"
+      # Replace environment variables in the config file
+  # This will replace any ${VARIABLE} or $VARIABLE with its value
+  if envsubst < "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"; then
+    _ok x"Variable substitution in config file successful."
+    _debug "Updated configMap file:"
+    _debug "$(cat ${CONFIG_FILE})"
+  else
+    _error "Failed to substitute environment variables in config file. Exiting..."
+    _echo
+    _error "Init script failed to complete." && exit 1
   fi
 else
-  $echo_cmd "[ OK    ] Using regular storage"
+  _warn "Config file not found at ${CONFIG_FILE}"
 fi
 
-# Perform ConfigMap variable substitution
-$echo_cmd "4. Processing ConfigMap environment variables...\n"
-
-if [[ -f "$CONFIG_FILE" ]]; then
-    $echo_cmd "[ OK    ] Found config file at ${CONFIG_FILE}"
-    
-    # Replace environment variables in the config file
-    # This will replace any ${VARIABLE} or $VARIABLE with its value
-    if envsubst < "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"; then
-      $echo_cmd "[ OK    ] Substituted environment variables in config file"
-    else
-      $echo_cmd "[ ERROR ] Failed to substitute environment variables in config file. Exiting with 1..." && $echo_cmd "\n[ ERROR ] Init script completed at $(date)." && exit 1
-    fi
-else
-    $echo_cmd "[ WARN  ] Config file not found at ${CONFIG_FILE}"
-fi
-
-$echo_cmd "\n[ OK    ] Init script completed at $(date)."
+_ok "Init script completed successfully."
 exit 0

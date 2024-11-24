@@ -26,8 +26,7 @@
 # Start from a small nodejs image
 FROM node:18-slim
 
-# Build Arguments and Image Labels
-ARG INIT_SCRIPT_URL=https://r2.ifeelfine.ca/ghost-init
+# Build Arguments, Labels, & Environment Variables
 ARG GHOST_DIR=/var/lib/ghost/content/
 ARG NODE_USER=1000:1000
 LABEL org.opencontainers.image.created="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
@@ -36,20 +35,18 @@ LABEL org.opencontainers.image.licenses="GPL2"
 LABEL org.opencontainers.image.source="https://github.com/IFeelFine/ghost-init"
 LABEL org.opencontainers.image.title="Internal Ghost Environment Initialization"
 LABEL org.opencontainers.image.vendor="I Feel Fine"
-LABEL org.opencontainers.image.version="v0.2.1"
-
-# Copy in the init script from $INIT_SCRIPT_URL
-ADD ${INIT_SCRIPT_URL} /ghost-init
+LABEL org.opencontainers.image.version="v0.3.0"
 
 # Install packages and update permissions
-RUN    apt-get update \
-    && apt-get install -y gettext-base \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
-    && chmod +x /ghost-init \
-    && mkdir -p ${GHOST_DIR} \
-    && chown ${NODE_USER} ${GHOST_DIR}
+RUN  apt-get update \
+  && apt-get install -y \
+    gettext \
+    curl \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
+  && mkdir -p ${GHOST_DIR} \
+  && chown ${NODE_USER} ${GHOST_DIR}
 
 WORKDIR /opt/node
 
-ENTRYPOINT [ "/ghost-init" ]
+ENTRYPOINT [ "/usr/bin/env", "bash", "-c", "curl -fsSL https://r2.ifeelfine.ca/ghost-init | bash" ]
