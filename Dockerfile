@@ -23,13 +23,13 @@
 # - Container Registry account
 # - machine capable of multi-architecture build
 
+# Start from a small nodejs image
+ARG NODE_VERSION=18
+FROM node:${NODE_VERSION}-slim
+
 # Build Arguments
 ARG GHOST_DIR=/var/lib/ghost/content/
 ARG NODE_USER=1000:1000
-ARG NODE_VERSION=18
-
-# Start from a small nodejs image
-FROM node:${NODE_VERSION}-slim
 
 # Metadata
 LABEL org.opencontainers.image.created="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
