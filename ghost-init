@@ -19,7 +19,7 @@
 # storage plugin, if needed. Updates configMap variables to
 # values from the 1Password secret.
 # -------------
-# Version 0.3.0 (see GH repo for release notes)
+# Version 0.3.1 (see GH repo for release notes)
 
 set -e # Exit on error
 
@@ -122,32 +122,37 @@ _echo
 # Step 3. Install storage adapter, if required
 _echo "3. Checking for a storage adapter and installing the plugin, if required."
 _debug "STORAGE__PROVIDER = ${STORAGE__PROVIDER}"
-if [[ "${STORAGE__PROVIDER}" == "s3" ]]; then
-  _ok "Using S3 for storage"
-  _echo "3.1 Installing the ghos3 plug-in"
-  _debug "Set working directory to /opt/node"
-  cd /opt/node
-  _debug "Running npm install ghos3."
-  if npm install ghos3; then
-    _ok "Installed ghos3 plug-in"
-    if mkdir -p "${GHOST_CONTENT}/adapters/storage" && mv node_modules/ghos3 "${GHOST_CONTENT}/adapters/storage/s3"; then
-      _debug "Moved ghos3 plug-in to \"${GHOST_CONTENT}/adapters/storage/s3\""
+
+case "${STORAGE__PROVIDER,,}" in
+  "s3")
+    _ok "Using S3 for storage"
+    _echo "3.1 Installing the ghos3 plug-in"
+    _debug "Set working directory to /opt/node"
+    cd /opt/node
+    _debug "Running npm install ghos3."
+    if npm install ghos3; then
+      _ok "Installed ghos3 plug-in"
+      if mkdir -p "${GHOST_CONTENT}/adapters/storage" && mv node_modules/ghos3 "${GHOST_CONTENT}/adapters/storage/s3"; then
+        _debug "Moved ghos3 plug-in to \"${GHOST_CONTENT}/adapters/storage/s3\""
+      else
+        _error "Failed to copy ghos3 plug-in to \"${GHOST_CONTENT}/adapters/storage/s3\". Exiting..."
+        _echo
+        _error "Init script failed to complete." && exit 1
+      fi
     else
-      _error "Failed to copy ghos3 plug-in to \"${GHOST_CONTENT}/adapters/storage/s3\". Exiting..."
+      _error "Failed to install ghos3 plug-in. Exiting..." 
       _echo
       _error "Init script failed to complete." && exit 1
     fi
-  else
-    _error "Failed to install ghos3 plug-in. Exiting..." 
-    _echo
-    _error "Init script failed to complete." && exit 1
-  fi
-elif [[ "${STORAGE__PROVIDER}" != "s3" ]]; then
-  _ok "Using local storage"
-  _debug "No action required."
-elif [[ "${STORAGE__PROVIDER}" == "" ]]; then
-  _warn "Storage driver not specified. Is this correct?"
-fi
+    ;;
+  "")
+    _warn "Storage driver not specified. Is this correct?"
+    ;;
+  *)
+    _ok "Using local storage"
+    _debug "No action required."
+    ;;
+esac
 
 # Step 4. Perform ConfigMap variable substitution
 _echo "4. Processing ConfigMap against environment variables."

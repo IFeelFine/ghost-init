@@ -1,8 +1,7 @@
 {
-  "cSpell.words": [
-    "ghos"
-  ],
   "cSpell.ignoreWords": [
-    "ghos"
+    "ghos",
+    "envsubst",
+    "noninteractive"
   ]
 }

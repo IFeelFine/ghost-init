@@ -23,23 +23,26 @@
 # - Container Registry account
 # - machine capable of multi-architecture build
 
-# Start from a small nodejs image
-FROM node:18-slim
-
-# Build Arguments, Labels, & Environment Variables
+# Build Arguments
 ARG GHOST_DIR=/var/lib/ghost/content/
 ARG NODE_USER=1000:1000
+ARG NODE_VERSION=18
+
+# Start from a small nodejs image
+FROM node:${NODE_VERSION}-slim
+
+# Metadata
 LABEL org.opencontainers.image.created="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
 LABEL org.opencontainers.image.description="A Node.js that instantiates the Ghost environment"
 LABEL org.opencontainers.image.licenses="GPL2"
 LABEL org.opencontainers.image.source="https://github.com/IFeelFine/ghost-init"
 LABEL org.opencontainers.image.title="Internal Ghost Environment Initialization"
 LABEL org.opencontainers.image.vendor="I Feel Fine"
-LABEL org.opencontainers.image.version="v0.3.0"
+LABEL org.opencontainers.image.version="v0.3.1"
 
 # Install packages and update permissions
 RUN  apt-get update \
-  && apt-get install -y \
+  && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     gettext \
     curl \
   && apt-get clean \
