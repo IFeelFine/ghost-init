@@ -25,12 +25,14 @@ set -e # Exit on error
 
 # Variable Declaration
 # ====================
+COMMANDS_MISSING=()                                     # Missing command list
+COMMANDS="envsubst curl jq"                             # Linux commands needed for proper execution
+CONFIG_FILE="/var/lib/ghost/config.production.json"     # Name of Ghost config file
 DEBUG=${DEBUG:-false}                                   # Assume debug is off unless specifically set
 GHOST_CONTENT=${GHOST_CONTENT:-/var/lib/ghost/content}  # Set Ghost content directory
-CONFIG_FILE="/var/lib/ghost/config.production.json"     # Name of Ghost config file
-SUB_DIRS="apps data files images logs media public settings themes" # Directories within $GHOST_CONTENT
+STORAGE_PROVIDER=${STORAGE_PROVIDER:-}                  # Storage provider
 SUB_CREATED=false                                       # Indicates a subdirectory was created
-STORAGE__PROVIDER=${STORAGE__PROVIDER:-}                # Storage provider
+SUB_DIRS="apps data files images logs media public settings themes" # Directories within $GHOST_CONTENT
 
 # Print Functions
 # ===============
@@ -54,13 +56,23 @@ _debug() {
 # ========
 # Check to make sure that the required tools have been installed with the Dockerfile
 
-if command -v envsubst >/dev/null 2>&1; then
-  :
-else
-  _error "envsubst is required but not installed."
+for cmd in $COMMANDS; do
+  if command -v $cmd >/dev/null; then
+    _debug "$cmd is installed and available for use"
+  else
+    _debug "$cmd is required but not installed."
+    COMMANDS_MISSING+=("$cmd")
+  fi
+done
+
+if [ ${#COMMANDS_MISSING[@]} -gt 0 ]; then
+  _error "The following required commands are missing:"
+  printf '%s [ \033[0;31mERROR\033[0m ]   - %s\n' "$(date +%Y-%m-%dT%H:%M:%S-%Z)" "${COMMANDS_MISSING[@]}"
   _echo
-  _error "Init script failed to complete." && exit 1;
+  _error "Init script failed to complete."
+  exit 2
 fi
+
 if [[ "${GHOST_CONTENT}" != /* ]]; then
   _error "GHOST_CONTENT must be an absolute path, but you provided \"${GHOST_CONTENT}\"."
   _echo
@@ -121,9 +133,9 @@ _echo
 
 # Step 3. Install storage adapter, if required
 _echo "3. Checking for a storage adapter and installing the plugin, if required."
-_debug "STORAGE__PROVIDER = ${STORAGE__PROVIDER}"
+_debug "STORAGE_PROVIDER = ${STORAGE_PROVIDER}"
 
-case "${STORAGE__PROVIDER,,}" in
+case "${STORAGE_PROVIDER,,}" in
   "s3")
     _ok "Using S3 for storage"
     _echo "3.1 Installing the ghos3 plug-in"
@@ -162,8 +174,23 @@ if [[ -f "$CONFIG_FILE" ]]; then
   _debug "Found config file at ${CONFIG_FILE}"
       # Replace environment variables in the config file
   # This will replace any ${VARIABLE} or $VARIABLE with its value
-  if envsubst < "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"; then
-    _ok x"Variable substitution in config file successful."
+  if envsubst < "$CONFIG_FILE" > "${CONFIG_FILE}.tmp"; then                         #####  && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
+    _debug "Variable substitution in ${CONFIG_FILE##*/} successful."
+    if jq empty "${CONFIG_FILE}" 2>/dev/null; then
+      if mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"; then
+        :
+      else
+        _error "Failed to properly save ${CONFIG_FILE##*/}. Exiting..."
+        _echo
+        _error "Init script failed to complete." && exit 1
+      fi
+      _ok "Substitutions completed successfully. File is structurally correct."
+    else
+      _warn "Substitution completed successfully, but file is not structurally correct."
+      _warn "Review environment variables to ensure they are stored correctly and try again."
+      _echo
+      _error "Init script failed to complete." && exit 1
+    fi
     _debug "Updated configMap file:"
     _debug "$(cat ${CONFIG_FILE})"
   else
@@ -172,7 +199,11 @@ if [[ -f "$CONFIG_FILE" ]]; then
     _error "Init script failed to complete." && exit 1
   fi
 else
-  _warn "Config file not found at ${CONFIG_FILE}"
+  _warn "Config file ${CONFIG_FILE##*/} not found in directory ${CONFIG_FILE%/*}/"
+  _warn "Ghost may not function correctly."
+  _warn "Review your manifest to ensure it is correct and properly references config variables."
+  _warn "Init script failed to complete." && exit 78
+
 fi
 
 _ok "Init script completed successfully."
