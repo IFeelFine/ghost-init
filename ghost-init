@@ -43,13 +43,13 @@ _ok() {
   _echo "[ \033[0;32mOK\033[0m    ] $*"
 }
 _warn() {
-  _echo "[ \033[1;33mWARN\033[0m  ] $*"
+  _echo "[ \033[1;33mWARN\033[0m  ] \033[1;33m$*"
 }
 _error() {
   _echo "[ \033[0;31mERROR\033[0m ] $*"
 }
 _debug() {
-  $DEBUG && _echo "[ DEBUG ] $*"
+  $DEBUG && _echo "[ \033[0;38;5;40mDEBUG\033[0m ] $*"
 }
 
 # Preamble
@@ -58,103 +58,103 @@ _debug() {
 
 for cmd in $COMMANDS; do
   if command -v $cmd >/dev/null; then
-    _debug "$cmd is installed and available for use"
+    _debug "\033[0;34m$cmd\033[0m is installed and available for use"
   else
-    _debug "$cmd is required but not installed."
+    _debug "\033[0;34m$cmd\033[0m is required but not installed."
     COMMANDS_MISSING+=("$cmd")
   fi
 done
 
 if [ ${#COMMANDS_MISSING[@]} -gt 0 ]; then
   _error "The following required commands are missing:"
-  printf '%s [ \033[0;31mERROR\033[0m ]   - %s\n' "$(date +%Y-%m-%dT%H:%M:%S-%Z)" "${COMMANDS_MISSING[@]}"
+  printf '%s [ \033[0;31mERROR\033[0m ]   - \033[0;34m%s\033[0m\n' "$(date +%Y-%m-%dT%H:%M:%S-%Z)" "${COMMANDS_MISSING[@]}"
   _echo
-  _error "Init script failed to complete."
+  _error "Init script \033[0;31mfailed\033[0m to complete."
   exit 2
 fi
 
 if [[ "${GHOST_CONTENT}" != /* ]]; then
-  _error "GHOST_CONTENT must be an absolute path, but you provided \"${GHOST_CONTENT}\"."
+  _error "\033[0;34mGHOST_CONTENT\033[0m must be an \033[0;31mabsolute path\033[0m, but you provided \"${GHOST_CONTENT}\"."
   _echo
-  _error "Init script failed to complete." && exit 1;
+  _error "Init script \033[0;31mfailed\033[0m to complete." && exit 1;
 fi
 
 
 # Main Content
 # ============
-_ok "Ghost init script started..."
+_ok "\033[0;32m;Ghost init script started...\033[0m"
 _echo
-_debug "\$GHOST_CONTENT=$GHOST_CONTENT"
-_debug "\$USR_GRP=$USR_GRP"
-_debug "\$CONFIG_FILE=$CONFIG_FILE"
+_debug "\$\033[0;35mGHOST_CONTENT\033[0m = \033[0;34m$GHOST_CONTENT\033[0m"
+_debug "\$\033[0;35mUSR_GRP\033[0m       = \033[0;34m$USR_GRP\033[0m"
+_debug "\$\033[0;35mCONFIG_FILE\033[0m   = \033[0;34m$CONFIG_FILE\033[0m"
 
 # Step 1. Check if the content directory exists and if not create it
-_echo "1. Checking if \"${GHOST_CONTENT}\" exists."
+_echo "1. Checking if \033[0;34m${GHOST_CONTENT}\033[0m exists."
 
 if [[ ! -d "${GHOST_CONTENT}" ]]; then
-  _debug "${GHOST_CONTENT} doesn't exist. Creating it."
+  _debug "\033[0;34m${GHOST_CONTENT}\033[0m doesn't exist. Creating it."
   if mkdir -p "${GHOST_CONTENT}"; then
-    _ok "\"${GHOST_CONTENT}\" directory created."
+    _ok "\033[0;34m${GHOST_CONTENT}\033[0m directory \033[0;38;5;40mcreated\033[0m."
   else
-    _error "Failed to create \"${GHOST_CONTENT}\". Exiting..."
+    _error "\033[0;31mfailed\033[0m to create \033[0;34m${GHOST_CONTENT}\033[0m. Exiting..."
     _error
-    _error "Init script failed to complete." && exit 1
+    _error "Init script \033[0;31mfailed\033[0m to complete." && exit 1
   fi
 else
-  _ok "\"${GHOST_CONTENT}\" already exists."
+  _ok "\033[0;34m${GHOST_CONTENT}\033[0m already exists."
 fi
 _echo
 
 # Step 2. Ensure the sub directories of ${GHOST_CONTENT} exist.
-_echo "2. Checking for subdirectories of \"${GHOST_CONTENT}\"."
+_echo "2. Checking for subdirectories of \033[0;34m${GHOST_CONTENT}\033[0m."
 
-_debug "Attempting to create subdirectories \"${SUB_DIRS// /, }\"..."
+_debug "Attempting to create subdirectories \033[0;35m${SUB_DIRS// /, }\033[0m..."
 for DIR in $SUB_DIRS; do
-  _debug "Checking if \"${GHOST_CONTENT}/${DIR}\" exists."
+  _debug "Checking if \033[0;34m${GHOST_CONTENT}\033[0m/\033[0;35m${DIR}\033[0m exists."
   if [[ ! -d "${GHOST_CONTENT}/${DIR}" ]]; then 
     if mkdir -p "${GHOST_CONTENT}/${DIR}"; then
       _debug "\"${GHOST_CONTENT}/${DIR}\ created"
       SUB_CREATED=true
     else 
-    _error "Failed to create \"${GHOST_CONTENT}/${DIR}\". Exiting..."
+    _error "\033[0;31mfailed\033[0m to create \033[0;34m${GHOST_CONTENT}\033[0m/\033[0;35m${DIR}\033[0m. Exiting..."
     _error
-    _error "Init script failed to complete." && exit 1
+    _error "Init script \033[0;31mfailed\033[0m to complete." && exit 1
     fi
-  else _debug "\"${GHOST_CONTENT}/${DIR}\" already exists."
+  else _debug "\033[0;34m${GHOST_CONTENT}\033[0m/\033[0;35m${DIR}\033[0m already exists."
   fi
 done
 
 if $SUB_CREATED; then
-  _ok "Finished creating subdirectories of \"${GHOST_CONTENT}\""
+  _ok "Finished creating subdirectories of \033[0;34m${GHOST_CONTENT}\033[0m."
 else
-  _ok "All subdirectories of \"${GHOST_CONTENT}\" already exist."
+  _ok "All subdirectories of \033[0;34m${GHOST_CONTENT}\033[0m already exist."
 fi
 _echo
 
 # Step 3. Install storage adapter, if required
 _echo "3. Checking for a storage adapter and installing the plugin, if required."
-_debug "STORAGE_PROVIDER = ${STORAGE_PROVIDER}"
+_debug "\$\033[0;35mSTORAGE_PROVIDER\033[0m = \033[0;34m${STORAGE_PROVIDER}\033[0m"
 
 case "${STORAGE_PROVIDER,,}" in
   "s3")
     _ok "Using S3 for storage"
-    _echo "3.1 Installing the ghos3 plug-in"
+    _echo "3.1 Installing the \033[0;38;5;40mghos3\033[0m plug-in"
     _debug "Set working directory to /opt/node"
     cd /opt/node
-    _debug "Running npm install ghos3."
+    _debug "Running npm install \033[0;38;5;40mghos3\033[0m."
     if npm install ghos3; then
-      _ok "Installed ghos3 plug-in"
+      _ok "Installed \033[0;38;5;40mghos3\033[0m plug-in"
       if mkdir -p "${GHOST_CONTENT}/adapters/storage" && mv node_modules/ghos3 "${GHOST_CONTENT}/adapters/storage/s3"; then
-        _debug "Moved ghos3 plug-in to \"${GHOST_CONTENT}/adapters/storage/s3\""
+        _debug "Moved \033[0;38;5;40mghos3\033[0m plug-in to \033[0;34m${GHOST_CONTENT}/adapters/storage/s3\033[0m"
       else
-        _error "Failed to copy ghos3 plug-in to \"${GHOST_CONTENT}/adapters/storage/s3\". Exiting..."
+        _error "\033[0;31mfailed\033[0m to copy \033[0;38;5;40mghos3\033[0m plug-in to \"${GHOST_CONTENT}/adapters/storage/s3\". Exiting..."
         _echo
-        _error "Init script failed to complete." && exit 1
+        _error "Init script \033[0;31mfailed\033[0m to complete." && exit 1
       fi
     else
-      _error "Failed to install ghos3 plug-in. Exiting..." 
+      _error "\033[0;31mfailed\033[0m to install \033[0;38;5;40mghos3\033[0m plug-in. Exiting..." 
       _echo
-      _error "Init script failed to complete." && exit 1
+      _error "Init script \033[0;31mfailed\033[0m to complete." && exit 1
     fi
     ;;
   "")
@@ -169,42 +169,17 @@ esac
 # Step 4. Perform ConfigMap variable substitution
 _echo "4. Processing ConfigMap against environment variables."
 
-_debug "Looking for config file at ${CONFIG_FILE}"
+_debug "Looking for config file at \033[0;34m${CONFIG_FILE}\033[0m"
 if [[ -f "$CONFIG_FILE" ]]; then
-  _debug "Found config file at ${CONFIG_FILE}"
+  _debug "Found config file at \033[0;34m${CONFIG_FILE}\033[0m."
       # Replace environment variables in the config file
   # This will replace any ${VARIABLE} or $VARIABLE with its value
   if envsubst < "$CONFIG_FILE" > "${CONFIG_FILE}.tmp"; then                         #####  && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
-    _debug "Variable substitution in ${CONFIG_FILE##*/} successful."
+    _debug "Variable substitution in \033[0;34m${CONFIG_FILE##*/}\033[0m successful."
     if jq empty "${CONFIG_FILE}" 2>/dev/null; then
       if mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"; then
         :
       else
-        _error "Failed to properly save ${CONFIG_FILE##*/}. Exiting..."
+        _error "\033[0;31mfailed\033[0m to properly save \033[0;34m${CONFIG_FILE##*/}\033[0m. Exiting..."
         _echo
-        _error "Init script failed to complete." && exit 1
-      fi
-      _ok "Substitutions completed successfully. File is structurally correct."
-    else
-      _warn "Substitution completed successfully, but file is not structurally correct."
-      _warn "Review environment variables to ensure they are stored correctly and try again."
-      _echo
-      _error "Init script failed to complete." && exit 1
-    fi
-    _debug "Updated configMap file:"
-    _debug "$(cat ${CONFIG_FILE})"
-  else
-    _error "Failed to substitute environment variables in config file. Exiting..."
-    _echo
-    _error "Init script failed to complete." && exit 1
-  fi
-else
-  _warn "Config file ${CONFIG_FILE##*/} not found in directory ${CONFIG_FILE%/*}/"
-  _warn "Ghost may not function correctly."
-  _warn "Review your manifest to ensure it is correct and properly references config variables."
-  _warn "Init script failed to complete." && exit 78
-
-fi
-
-_ok "Init script completed successfully."
-exit 0
+        _error "Init script \033[0;31mfailed\033[0m to comple
