@@ -19,7 +19,7 @@
 # storage plugin, if needed. Updates configMap variables to
 # values from the 1Password secret.
 # -------------
-# Version 0.3.1 (see GH repo for release notes)
+# Version 0.4.0 (see GH repo for release notes)
 
 set -e # Exit on error
 
@@ -37,7 +37,7 @@ SUB_DIRS="apps data files images logs media public settings themes" # Directorie
 # Print Functions
 # ===============
 _echo() {
-  /bin/echo -e "$(date +%Y-%m-%dT%H:%M:%S-%Z) "
+  /bin/echo -e "$(date +%Y-%m-%dT%H:%M:%S.%3N-%Z) $*"
 }
 _ok() {
   _echo "[ \033[0;32mOK\033[0m    ] $*"
