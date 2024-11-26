@@ -24,7 +24,7 @@
 # - machine capable of multi-architecture build
 
 # Start from a small nodejs image
-ARG NODE_VERSION=18
+ARG NODE_VERSION=20
 FROM node:${NODE_VERSION}-slim
 
 # Build Arguments
@@ -32,19 +32,20 @@ ARG GHOST_DIR=/var/lib/ghost/content/
 ARG NODE_USER=1000:1000
 
 # Metadata
-LABEL org.opencontainers.image.created="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-LABEL org.opencontainers.image.description="A Node.js that instantiates the Ghost environment"
-LABEL org.opencontainers.image.licenses="GPL2"
-LABEL org.opencontainers.image.source="https://github.com/IFeelFine/ghost-init"
-LABEL org.opencontainers.image.title="Internal Ghost Environment Initialization"
-LABEL org.opencontainers.image.vendor="I Feel Fine"
-LABEL org.opencontainers.image.version="v0.3.1"
+LABEL org.opencontainers.image.created="$(date +'%Y-%m-%dT%H:%M:%S.%6N-%Z')" \
+      org.opencontainers.image.description="A Node.js based container that instantiates our Ghost CMS environment" \
+      org.opencontainers.image.licenses="GPL2" \
+      org.opencontainers.image.source="https://github.com/IFeelFine/ghost-init" \
+      org.opencontainers.image.title="Internal Ghost Environment Initialization" \
+      org.opencontainers.image.vendor="I Feel Fine" \
+      org.opencontainers.image.version="v0.4.0"
 
 # Install packages and update permissions
 RUN  apt-get update \
   && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     gettext \
     curl \
+    ca-certificates \
     jq \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
@@ -53,4 +54,4 @@ RUN  apt-get update \
 
 WORKDIR /opt/node
 
-ENTRYPOINT [ "/usr/bin/env", "bash", "-c", "curl -fsSL https://r2.ifeelfine.ca/ghost-init | bash" ]
+ENTRYPOINT [ "/usr/bin/env", "bash", "-c", "curl -fsSL https://r2.i
