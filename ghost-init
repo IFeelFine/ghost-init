@@ -182,4 +182,29 @@ if [[ -f "$CONFIG_FILE" ]]; then
       else
         _error "\033[0;31mfailed\033[0m to properly save \033[0;34m${CONFIG_FILE##*/}\033[0m. Exiting..."
         _echo
-        _error "Init script \033[0;31mfailed\033[0m to comple
+        _error "Init script \033[0;31mfailed\033[0m to complete." && exit 1
+      fi
+      _ok "Substitutions completed successfully. File is structurally correct."
+    else
+      _warn "Substitution completed successfully, but file is not structurally correct."
+      _warn "Review environment variables to ensure they are stored correctly and try again."
+      _echo
+      _error "Init script \033[0;31mfailed\033[0m to complete." && exit 1
+    fi
+    _debug "Updated configMap file:"
+    _debug "$(cat ${CONFIG_FILE})"
+  else
+    _error "\033[0;31mfailed\033[0m to substitute environment variables in config file. Exiting..."
+    _echo
+    _error "Init script \033[0;31mfailed\033[0m to complete." && exit 1
+  fi
+else
+  _warn "Config file ${CONFIG_FILE##*/} not found in directory ${CONFIG_FILE%/*}/"
+  _warn "Ghost may not function correctly."
+  _warn "Review your manifest to ensure it is correct and properly references config variables."
+  _warn "Init script \033[0;31mfailed\033[0m to complete." && exit 78
+
+fi
+
+_ok "Init script completed successfully."
+exit 0
