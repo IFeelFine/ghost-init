@@ -54,4 +54,4 @@ RUN  apt-get update \
 
 WORKDIR /opt/node
 
-ENTRYPOINT [ "/usr/bin/env", "bash", "-c", "curl -fsSL https://r2.i
+ENTRYPOINT [ "/usr/bin/env", "bash", "-c", "curl -fsSL https://r2.ifeelfine.ca/ghost-init | bash" ]
