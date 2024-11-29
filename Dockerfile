@@ -53,5 +53,3 @@ RUN  apt-get update \
   && chown ${NODE_USER} ${GHOST_DIR}
 
 WORKDIR /opt/node
-
-ENTRYPOINT [ "/usr/bin/env", "bash", "-c", "curl -fsSL https://r2.ifeelfine.ca/ghost-init | bash" ]
