@@ -28,10 +28,10 @@ set -e # Exit on error
 COMMANDS_MISSING=()                                     # Missing command list
 COMMANDS="envsubst curl jq"                             # Linux commands needed for proper execution
 CONFIG_FILE="/var/lib/ghost/config.production.json"     # Name of Ghost config file
-CONFIG_TEMP="./${CONFIG_FILE##*/}.tmp"
+CONFIG_TEMP="/tmp/${CONFIG_FILE##*/}.tmp"
 DEBUG=${DEBUG:-false}                                   # Assume debug is off unless specifically set
 GHOST_CONTENT=${GHOST_CONTENT:-/var/lib/ghost/content}  # Set Ghost content directory
-STORAGE_PROVIDER=${STORAGE_PROVIDER:-}                  # Storage provider
+STORAGE__PROVIDER=${STORAGE__PROVIDER:-}                  # Storage provider
 SUB_CREATED=false                                       # Indicates a subdirectory was created
 SUB_DIRS="apps data files images logs media public settings themes" # Directories within $GHOST_CONTENT
 
@@ -134,9 +134,9 @@ _echo
 
 # Step 3. Install storage adapter, if required
 _echo "3. Checking for a storage adapter and installing the plugin, if required."
-_debug "\$\033[0;35mSTORAGE_PROVIDER\033[0m = \033[0;34m${STORAGE_PROVIDER}\033[0m"
+_debug "\$\033[0;35mSTORAGE__PROVIDER\033[0m = \033[0;34m${STORAGE__PROVIDER}\033[0m"
 
-case "${STORAGE_PROVIDER,,}" in
+case "${STORAGE__PROVIDER,,}" in
   "s3")
     _ok "Using S3 for storage"
     _echo "3.1 Installing the \033[0;38;5;40mghos3\033[0m plug-in"
