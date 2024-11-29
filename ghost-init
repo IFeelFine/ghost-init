@@ -28,6 +28,7 @@ set -e # Exit on error
 COMMANDS_MISSING=()                                     # Missing command list
 COMMANDS="envsubst curl jq"                             # Linux commands needed for proper execution
 CONFIG_FILE="/var/lib/ghost/config.production.json"     # Name of Ghost config file
+CONFIG_TEMP="./${CONFIG_FILE##*/}.tmp"
 DEBUG=${DEBUG:-false}                                   # Assume debug is off unless specifically set
 GHOST_CONTENT=${GHOST_CONTENT:-/var/lib/ghost/content}  # Set Ghost content directory
 STORAGE_PROVIDER=${STORAGE_PROVIDER:-}                  # Storage provider
@@ -171,16 +172,17 @@ _echo "4. Processing ConfigMap against environment variables."
 
 _debug "Looking for config file at \033[0;34m${CONFIG_FILE}\033[0m"
 if [[ -f "$CONFIG_FILE" ]]; then
+  cd /opt/node
   _debug "Found config file at \033[0;34m${CONFIG_FILE}\033[0m."
       # Replace environment variables in the config file
   # This will replace any ${VARIABLE} or $VARIABLE with its value
-  if envsubst < "$CONFIG_FILE" > "${CONFIG_FILE}.tmp"; then                         #####  && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
-    _debug "Variable substitution in \033[0;34m${CONFIG_FILE##*/}\033[0m successful."
+  if envsubst < "$CONFIG_FILE" > "$CONFIG_TEMP"; then                         #####  && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
+    _debug "Variable substitution in \033[0;34m${CONFIG_TEMP}\033[0m successful."
     if jq empty "${CONFIG_FILE}" 2>/dev/null; then
-      if mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"; then
+      if mv ."$CONFIG_TEMP" "$CONFIG_FILE"; then
         :
       else
-        _error "\033[0;31mfailed\033[0m to properly save \033[0;34m${CONFIG_FILE##*/}\033[0m. Exiting..."
+        _error "\033[0;31mFailed\033[0m to properly overwrite \033[0;34m${CONFIG_FILE}\033[0m with the temporary file. Exiting..."
         _echo
         _error "Init script \033[0;31mfailed\033[0m to complete." && exit 1
       fi
